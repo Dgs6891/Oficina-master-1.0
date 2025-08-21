@@ -423,6 +423,20 @@
             animation: pulse 1.5s infinite;
         }
 
+        .ocr-loading {
+            display: none;
+            text-align: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        .ocr-loading i {
+            color: var(--secondary);
+            margin-right: 10px;
+        }
+
         footer {
             text-align: center;
             margin-top: 50px;
@@ -440,6 +454,15 @@
             0% { transform: scale(0.95); opacity: 0.7; }
             70% { transform: scale(1.1); opacity: 1; }
             100% { transform: scale(0.95); opacity: 0.7; }
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .rotate {
+            animation: rotate 1s linear infinite;
         }
 
         .fade-in {
@@ -513,7 +536,7 @@
                 </div>
                 
                 <div class="form-group">
-                    <label>Usar câmera</label>
+                    <label>Usar câmera traseira</label>
                     <div class="camera-container">
                         <video id="cameraPreview" autoplay playsinline></video>
                         <canvas id="photoCanvas" style="display: none;"></canvas>
@@ -538,6 +561,10 @@
                     <div class="image-preview" id="imagePreview">
                         <img src="" alt="Preview da placa">
                     </div>
+                </div>
+
+                <div class="ocr-loading" id="ocrLoading">
+                    <i class="fas fa-spinner rotate"></i> Processando imagem e reconhecendo placa...
                 </div>
 
                 <div class="form-group">
@@ -605,7 +632,7 @@
                 </div>
                 
                 <div class="form-group">
-                    <label>Camera para conferência</label>
+                    <label>Camera traseira para conferência</label>
                     <div class="camera-container">
                         <video id="conferenceCameraPreview" autoplay playsinline></video>
                         <div class="camera-actions">
@@ -660,6 +687,7 @@
             const completedVehiclesList = document.getElementById('completedVehiclesList');
             const conferenceList = document.getElementById('conferenceList');
             const toast = document.getElementById('toast');
+            const ocrLoading = document.getElementById('ocrLoading');
             
             // Elementos da câmera
             const cameraPreview = document.getElementById('cameraPreview');
@@ -761,7 +789,15 @@
 
             // Funções da câmera
             function startCameraHandler() {
-                navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+                // Especificar o uso da câmera traseira
+                const constraints = {
+                    video: {
+                        facingMode: 'environment' // Força o uso da câmera traseira
+                    },
+                    audio: false
+                };
+                
+                navigator.mediaDevices.getUserMedia(constraints)
                 .then(function(stream) {
                     cameraStream = stream;
                     cameraPreview.srcObject = stream;
@@ -770,6 +806,7 @@
                 })
                 .catch(function(error) {
                     showToast('Erro ao acessar a câmera: ' + error.message, 'error');
+                    console.error('Erro ao acessar câmera:', error);
                 });
             }
 
@@ -803,7 +840,15 @@
 
             // Funções de conferência
             function startConferenceCameraHandler() {
-                navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+                // Especificar o uso da câmera traseira
+                const constraints = {
+                    video: {
+                        facingMode: 'environment' // Força o uso da câmera traseira
+                    },
+                    audio: false
+                };
+                
+                navigator.mediaDevices.getUserMedia(constraints)
                 .then(function(stream) {
                     conferenceCameraStream = stream;
                     conferenceCameraPreview.srcObject = stream;
@@ -817,6 +862,7 @@
                 })
                 .catch(function(error) {
                     showToast('Erro ao acessar a câmera: ' + error.message, 'error');
+                    console.error('Erro ao acessar câmera:', error);
                 });
             }
 
@@ -844,13 +890,28 @@
                 photoCanvas.height = conferenceCameraPreview.videoHeight;
                 context.drawImage(conferenceCameraPreview, 0, 0, photoCanvas.width, photoCanvas.height);
                 
+                // Aplicar pré-processamento para melhorar o OCR
+                const processedImageData = preprocessImageForOCR(context, photoCanvas.width, photoCanvas.height);
+                
+                // Criar um novo canvas com a imagem processada
+                const processedCanvas = document.createElement('canvas');
+                processedCanvas.width = photoCanvas.width;
+                processedCanvas.height = photoCanvas.height;
+                const processedContext = processedCanvas.getContext('2d');
+                processedContext.putImageData(processedImageData, 0, 0);
+                
                 // Converter para data URL e realizar OCR
-                const imageData = photoCanvas.toDataURL('image/png');
+                const imageData = processedCanvas.toDataURL('image/png');
                 
                 Tesseract.recognize(
                     imageData,
                     'eng',
-                    { logger: message => console.log(message) }
+                    { 
+                        logger: message => console.log(message),
+                        // Configurar parâmetros para melhor reconhecimento de placas
+                        tessedit_pageseg_mode: '7', // Modo de segmentação única de linha
+                        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789' // Só letras e números
+                    }
                 ).then(({ data: { text } }) => {
                     const foundPlate = extractPlateFromText(text);
                     if (foundPlate) {
@@ -861,10 +922,49 @@
             }
 
             function extractPlateFromText(text) {
-                // Expressão regular para placas do Mercosul e antigas
-                const plateRegex = /[A-Z]{3}[0-9][A-Z][0-9]{2}|[A-Z]{3}[0-9]{4}/gi;
+                // Expressão regular melhorada para placas brasileiras (antigas e Mercosul)
+                // Placas antigas: AAA-0000 ou AAA0000
+                // Placas Mercosul: AAA0A00 ou AAA0A00
+                const plateRegex = /[A-Z]{3}[\s\-]?[0-9][A-Z]?[0-9]{2}|[A-Z]{3}[\s\-]?[0-9]{4}/gi;
                 const matches = text.match(plateRegex);
-                return matches ? matches[0] : null;
+                
+                if (matches) {
+                    // Remover espaços e hífens e formatar corretamente
+                    let plate = matches[0].replace(/[\s\-]/g, '');
+                    
+                    // Verificar se é placa antiga (3 letras + 4 números)
+                    if (plate.length === 7 && /^[A-Z]{3}\d{4}$/.test(plate)) {
+                        return plate;
+                    }
+                    
+                    // Verificar se é placa Mercosul (3 letras + 1 número + 1 letra + 2 números)
+                    if (plate.length === 7 && /^[A-Z]{3}\d[A-Z]\d{2}$/.test(plate)) {
+                        return plate;
+                    }
+                    
+                    // Tentar corrigir possíveis erros de OCR
+                    if (plate.length >= 6) {
+                        // Se tiver 6 caracteres, pode estar faltando um
+                        if (plate.length === 6) {
+                            if (/^[A-Z]{3}\d{3}$/.test(plate)) {
+                                // Provavelmente placa antiga faltando o último número
+                                return plate + '0';
+                            }
+                        }
+                        
+                        // Se tiver 8 caracteres, pode ter um extra
+                        if (plate.length === 8) {
+                            if (/^[A-Z]{3}\d[A-Z]\d{3}$/.test(plate)) {
+                                // Provavelmente placa Mercosul com número extra
+                                return plate.substring(0, 7);
+                            }
+                        }
+                    }
+                    
+                    return plate.substring(0, 7); // Retorna os primeiros 7 caracteres
+                }
+                
+                return null;
             }
 
             function checkIfPlateExists(plate) {
@@ -892,22 +992,81 @@
             // Funções OCR
             function performOCR(imageData) {
                 showToast('Processando imagem...');
+                ocrLoading.style.display = 'block';
                 
-                Tesseract.recognize(
-                    imageData,
-                    'eng',
-                    { logger: message => console.log(message) }
-                ).then(({ data: { text } }) => {
-                    const foundPlate = extractPlateFromText(text);
-                    if (foundPlate) {
-                        plateNumber.value = foundPlate;
-                        showToast(`Placa reconhecida: ${foundPlate}`);
-                    } else {
-                        showToast('Não foi possível identificar a placa. Preencha manualmente.', 'error');
-                    }
-                }).catch(error => {
-                    showToast('Erro no reconhecimento de texto: ' + error.message, 'error');
-                });
+                // Criar uma imagem para pré-processamento
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    
+                    // Desenhar a imagem no canvas
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    
+                    // Aplicar pré-processamento para melhorar o OCR
+                    const processedImageData = preprocessImageForOCR(ctx, canvas.width, canvas.height);
+                    ctx.putImageData(processedImageData, 0, 0);
+                    
+                    // Converter para data URL
+                    const processedImage = canvas.toDataURL('image/png');
+                    
+                    Tesseract.recognize(
+                        processedImage,
+                        'eng',
+                        { 
+                            logger: message => console.log(message),
+                            // Configurar parâmetros para melhor reconhecimento de placas
+                            tessedit_pageseg_mode: '7', // Modo de segmentação única de linha
+                            tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789' // Só letras e números
+                        }
+                    ).then(({ data: { text } }) => {
+                        const foundPlate = extractPlateFromText(text);
+                        if (foundPlate) {
+                            plateNumber.value = foundPlate;
+                            showToast(`Placa reconhecida: ${foundPlate}`);
+                        } else {
+                            showToast('Não foi possível identificar a placa. Preencha manualmente.', 'error');
+                        }
+                        ocrLoading.style.display = 'none';
+                    }).catch(error => {
+                        showToast('Erro no reconhecimento de texto: ' + error.message, 'error');
+                        ocrLoading.style.display = 'none';
+                    });
+                };
+                img.src = imageData;
+            }
+
+            // Pré-processamento de imagem para melhorar o OCR
+            function preprocessImageForOCR(ctx, width, height) {
+                const imageData = ctx.getImageData(0, 0, width, height);
+                const data = imageData.data;
+                
+                // Aplicar filtro de contraste
+                const contrast = 1.5; // Ajuste de contraste
+                for (let i = 0; i < data.length; i += 4) {
+                    // Fórmula de ajuste de contraste
+                    data[i] = clamp((data[i] - 128) * contrast + 128);     // R
+                    data[i + 1] = clamp((data[i + 1] - 128) * contrast + 128); // G
+                    data[i + 2] = clamp((data[i + 2] - 128) * contrast + 128); // B
+                }
+                
+                // Aplicar limiarização (threshold) para binarizar a imagem
+                const threshold = 128; // Valor de limiar
+                for (let i = 0; i < data.length; i += 4) {
+                    const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+                    const value = avg > threshold ? 255 : 0;
+                    data[i] = value;     // R
+                    data[i + 1] = value; // G
+                    data[i + 2] = value; // B
+                }
+                
+                return imageData;
+            }
+            
+            function clamp(value) {
+                return Math.max(0, Math.min(255, value));
             }
 
             // Funções de gerenciamento de veículos
