@@ -135,6 +135,11 @@
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
         }
 
+        .card.checked {
+            border-left: 5px solid var(--success);
+            background-color: #f8fff9;
+        }
+
         .card-header {
             display: flex;
             align-items: center;
@@ -304,6 +309,11 @@
             background-color: #f9f9f9;
         }
 
+        .vehicle-item.checked {
+            background-color: #e8f5e9;
+            border-left: 3px solid var(--success);
+        }
+
         .vehicle-info h3 {
             font-size: 1.1rem;
             margin-bottom: 5px;
@@ -437,6 +447,20 @@
             margin-right: 10px;
         }
 
+        .auto-capture-info {
+            text-align: center;
+            padding: 10px;
+            background-color: #e3f2fd;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+            color: #0d47a1;
+        }
+
+        .auto-capture-info i {
+            margin-right: 5px;
+        }
+
         footer {
             text-align: center;
             margin-top: 50px;
@@ -461,12 +485,22 @@
             to { transform: rotate(360deg); }
         }
 
+        @keyframes highlight {
+            0% { background-color: #e8f5e9; }
+            50% { background-color: #c8e6c9; }
+            100% { background-color: #e8f5e9; }
+        }
+
         .rotate {
             animation: rotate 1s linear infinite;
         }
 
         .fade-in {
             animation: fadeIn 0.5s ease forwards;
+        }
+
+        .highlight {
+            animation: highlight 2s ease;
         }
 
         /* Responsividade */
@@ -533,6 +567,10 @@
                 <div class="card-header">
                     <i class="fas fa-camera"></i>
                     <h2>Capturar Placa</h2>
+                </div>
+                
+                <div class="auto-capture-info">
+                    <i class="fas fa-info-circle"></i> A câmera será desligada automaticamente após o reconhecimento da placa
                 </div>
                 
                 <div class="form-group">
@@ -631,6 +669,10 @@
                     <h2>Conferência de Veículos</h2>
                 </div>
                 
+                <div class="auto-capture-info">
+                    <i class="fas fa-info-circle"></i> Aponte a câmera para as placas. A conferência será feita automaticamente
+                </div>
+                
                 <div class="form-group">
                     <label>Camera traseira para conferência</label>
                     <div class="camera-container">
@@ -706,6 +748,8 @@
             let conferenceCameraStream = null;
             let conferenceInterval = null;
             let isConferenceMode = false;
+            let autoCaptureInterval = null;
+            let lastRecognizedPlate = '';
 
             // Navegação por abas
             navTabs.forEach(tab => {
@@ -747,7 +791,7 @@
                         imagePreview.querySelector('img').src = e.target.result;
                         
                         // Realizar OCR na imagem
-                        performOCR(e.target.result);
+                        performOCR(e.target.result, 'upload');
                     }
                     
                     reader.readAsDataURL(e.target.files[0]);
@@ -803,11 +847,26 @@
                     cameraPreview.srcObject = stream;
                     capturePhoto.disabled = false;
                     startCamera.disabled = true;
+                    
+                    // Iniciar captura automática
+                    startAutoCapture();
                 })
                 .catch(function(error) {
                     showToast('Erro ao acessar a câmera: ' + error.message, 'error');
                     console.error('Erro ao acessar câmera:', error);
                 });
+            }
+
+            function startAutoCapture() {
+                if (autoCaptureInterval) {
+                    clearInterval(autoCaptureInterval);
+                }
+                
+                autoCaptureInterval = setInterval(function() {
+                    if (cameraStream) {
+                        capturePhotoHandler();
+                    }
+                }, 3000); // Tenta reconhecer a cada 3 segundos
             }
 
             function capturePhotoHandler() {
@@ -822,10 +881,7 @@
                 imagePreview.querySelector('img').src = imageData;
                 
                 // Realizar OCR na imagem capturada
-                performOCR(imageData);
-                
-                // Parar a câmera após captura
-                stopCameraHandler();
+                performOCR(imageData, 'camera');
             }
 
             function stopCameraHandler() {
@@ -836,6 +892,11 @@
                 }
                 capturePhoto.disabled = true;
                 startCamera.disabled = false;
+                
+                if (autoCaptureInterval) {
+                    clearInterval(autoCaptureInterval);
+                    autoCaptureInterval = null;
+                }
             }
 
             // Funções de conferência
@@ -914,7 +975,8 @@
                     }
                 ).then(({ data: { text } }) => {
                     const foundPlate = extractPlateFromText(text);
-                    if (foundPlate) {
+                    if (foundPlate && foundPlate !== lastRecognizedPlate) {
+                        lastRecognizedPlate = foundPlate;
                         // Verificar se a placa está na lista
                         checkIfPlateExists(foundPlate);
                     }
@@ -922,11 +984,21 @@
             }
 
             function extractPlateFromText(text) {
+                // Primeiro, vamos limpar o texto removendo palavras comuns de placas que não interessam
+                const unwantedWords = ['BRASIL', 'MERCO', 'SUL', 'CIDADE', 'MUNIC', 'FEDERACAO', 'ESTADO', 
+                                      'SAO', 'RIO', 'PAULO', 'JANEIRO', 'MINAS', 'GERAIS', 'PARANA', 'SANTA', 'CATARINA'];
+                
+                let cleanText = text;
+                unwantedWords.forEach(word => {
+                    const regex = new RegExp(word, 'gi');
+                    cleanText = cleanText.replace(regex, '');
+                });
+                
                 // Expressão regular melhorada para placas brasileiras (antigas e Mercosul)
                 // Placas antigas: AAA-0000 ou AAA0000
                 // Placas Mercosul: AAA0A00 ou AAA0A00
                 const plateRegex = /[A-Z]{3}[\s\-]?[0-9][A-Z]?[0-9]{2}|[A-Z]{3}[\s\-]?[0-9]{4}/gi;
-                const matches = text.match(plateRegex);
+                const matches = cleanText.match(plateRegex);
                 
                 if (matches) {
                     // Remover espaços e hífens e formatar corretamente
@@ -950,12 +1022,20 @@
                                 // Provavelmente placa antiga faltando o último número
                                 return plate + '0';
                             }
+                            if (/^[A-Z]{3}\d[A-Z]\d{1}$/.test(plate)) {
+                                // Provavelmente placa Mercosul faltando o último número
+                                return plate + '0';
+                            }
                         }
                         
                         // Se tiver 8 caracteres, pode ter um extra
                         if (plate.length === 8) {
                             if (/^[A-Z]{3}\d[A-Z]\d{3}$/.test(plate)) {
                                 // Provavelmente placa Mercosul com número extra
+                                return plate.substring(0, 7);
+                            }
+                            if (/^[A-Z]{3}\d{5}$/.test(plate)) {
+                                // Provavelmente placa antiga com número extra
                                 return plate.substring(0, 7);
                             }
                         }
@@ -979,18 +1059,33 @@
 
             function markVehicleAsChecked(vehicleId) {
                 const vehicles = JSON.parse(localStorage.getItem('workshopVehicles')) || [];
-                const vehicle = vehicles.find(v => v.id === vehicleId);
+                const vehicleIndex = vehicles.findIndex(v => v.id === vehicleId);
                 
-                if (vehicle && !vehicle.checked) {
+                if (vehicleIndex !== -1) {
+                    const vehicle = vehicles[vehicleIndex];
                     vehicle.checked = true;
                     vehicle.checkedAt = new Date().toLocaleString('pt-BR');
+                    vehicle.lastConference = new Date().toLocaleString('pt-BR');
+                    
                     localStorage.setItem('workshopVehicles', JSON.stringify(vehicles));
                     updateConferenceList();
+                    
+                    // Destacar visualmente o item conferido
+                    const vehicleElement = document.querySelector(`.vehicle-item[data-id="${vehicleId}"]`);
+                    if (vehicleElement) {
+                        vehicleElement.classList.add('checked');
+                        vehicleElement.classList.add('highlight');
+                        
+                        // Remover o destaque após a animação
+                        setTimeout(() => {
+                            vehicleElement.classList.remove('highlight');
+                        }, 2000);
+                    }
                 }
             }
 
             // Funções OCR
-            function performOCR(imageData) {
+            function performOCR(imageData, source) {
                 showToast('Processando imagem...');
                 ocrLoading.style.display = 'block';
                 
@@ -1026,6 +1121,11 @@
                         if (foundPlate) {
                             plateNumber.value = foundPlate;
                             showToast(`Placa reconhecida: ${foundPlate}`);
+                            
+                            // Se veio da câmera, parar a câmera automaticamente
+                            if (source === 'camera') {
+                                stopCameraHandler();
+                            }
                         } else {
                             showToast('Não foi possível identificar a placa. Preencha manualmente.', 'error');
                         }
@@ -1144,7 +1244,8 @@
                 
                 pendingVehicles.forEach(vehicle => {
                     const conferenceItem = document.createElement('div');
-                    conferenceItem.className = 'vehicle-item';
+                    conferenceItem.className = `vehicle-item ${vehicle.checked ? 'checked' : ''}`;
+                    conferenceItem.setAttribute('data-id', vehicle.id);
                     conferenceItem.innerHTML = `
                         <div class="vehicle-info">
                             <h3>${vehicle.plate} - ${vehicle.model}</h3>
@@ -1154,6 +1255,7 @@
                                 ${getStatusText(vehicle.status)}
                             </span>
                             ${vehicle.checked ? `<p>Conferido em: ${vehicle.checkedAt}</p>` : ''}
+                            ${vehicle.lastConference ? `<p>Última conferência: ${vehicle.lastConference}</p>` : ''}
                         </div>
                         <div class="vehicle-actions">
                             ${!vehicle.checked ? `
