@@ -80,11 +80,13 @@
 
         .logo i {
             font-size: 2rem;
+            color: white;
         }
 
         .logo h1 {
             font-size: 1.8rem;
             font-weight: 700;
+            color: white;
         }
 
         .stats-container {
@@ -671,6 +673,9 @@
                             <button id="capturePhoto" class="btn btn-accent btn-block" disabled>
                                 <i class="fas fa-camera"></i> Capturar Placa
                             </button>
+                            <button id="stopCamera" class="btn btn-warning btn-block" style="display: none;">
+                                <i class="fas fa-stop"></i> Parar Câmera
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -840,6 +845,7 @@
             const photoCanvas = document.getElementById('photoCanvas');
             const startCamera = document.getElementById('startCamera');
             const capturePhoto = document.getElementById('capturePhoto');
+            const stopCamera = document.getElementById('stopCamera');
             
             // Elementos da conferência
             const conferenceCameraPreview = document.getElementById('conferenceCameraPreview');
@@ -860,6 +866,7 @@
             let isConferenceMode = false;
             let autoCaptureInterval = null;
             let lastRecognizedPlate = '';
+            let isProcessingImage = false;
 
             // Navegação por abas
             navTabs.forEach(tab => {
@@ -911,6 +918,7 @@
             // Configuração da câmera
             startCamera.addEventListener('click', startCameraHandler);
             capturePhoto.addEventListener('click', capturePhotoHandler);
+            stopCamera.addEventListener('click', stopCameraHandler);
 
             // Conferência
             startConferenceCamera.addEventListener('click', startConferenceCameraHandler);
@@ -961,6 +969,7 @@
                     cameraPreview.srcObject = stream;
                     capturePhoto.disabled = false;
                     startCamera.disabled = true;
+                    stopCamera.style.display = 'block';
                     
                     // Iniciar captura automática
                     startAutoCapture();
@@ -977,13 +986,16 @@
                 }
                 
                 autoCaptureInterval = setInterval(function() {
-                    if (cameraStream) {
+                    if (cameraStream && !isProcessingImage) {
                         capturePhotoHandler();
                     }
                 }, 3000); // Tenta reconhecer a cada 3 segundos
             }
 
             function capturePhotoHandler() {
+                if (isProcessingImage) return;
+                
+                isProcessingImage = true;
                 const context = photoCanvas.getContext('2d');
                 photoCanvas.width = cameraPreview.videoWidth;
                 photoCanvas.height = cameraPreview.videoHeight;
@@ -1006,6 +1018,7 @@
                 }
                 capturePhoto.disabled = true;
                 startCamera.disabled = false;
+                stopCamera.style.display = 'none';
                 
                 if (autoCaptureInterval) {
                     clearInterval(autoCaptureInterval);
@@ -1060,6 +1073,9 @@
             }
 
             function checkPlateConference() {
+                if (isProcessingImage) return;
+                
+                isProcessingImage = true;
                 const context = photoCanvas.getContext('2d');
                 photoCanvas.width = conferenceCameraPreview.videoWidth;
                 photoCanvas.height = conferenceCameraPreview.videoHeight;
@@ -1094,36 +1110,73 @@
                         // Verificar se a placa está na lista
                         checkIfPlateExists(foundPlate);
                     }
+                    isProcessingImage = false;
+                }).catch(error => {
+                    console.error('Erro no OCR:', error);
+                    isProcessingImage = false;
                 });
             }
 
             function extractPlateFromText(text) {
-                // Primeiro, vamos encontrar todas as sequências de 3 letras seguidas
-                const threeLettersRegex = /[A-Z]{3}/g;
-                const threeLettersMatches = text.match(threeLettersRegex);
+                // Primeiro, vamos limpar o texto removendo palavras indesejadas
+                const unwantedWords = ['BRASIL', 'BR', 'MERCO', 'SUL', 'CIDADE', 'MUNIC', 'FEDERACAO', 'ESTADO', 
+                                      'SAO', 'RIO', 'PAULO', 'JANEIRO', 'MINAS', 'GERAIS', 'PARANA', 'SANTA', 'CATARINA'];
                 
-                if (!threeLettersMatches) return null;
+                let cleanText = text;
+                unwantedWords.forEach(word => {
+                    const regex = new RegExp(word, 'gi');
+                    cleanText = cleanText.replace(regex, '');
+                });
                 
-                // Para cada sequência de 3 letras, vamos verificar se há números após ela
-                for (const letters of threeLettersMatches) {
-                    const lettersIndex = text.indexOf(letters);
-                    const afterLetters = text.substring(lettersIndex + 3);
+                // Dividir o texto em linhas e pegar apenas a segunda linha (onde geralmente está a placa principal)
+                const lines = cleanText.split('\n').filter(line => line.trim().length > 0);
+                
+                // Se tiver pelo menos duas linhas, focar na segunda linha (onde geralmente está a placa)
+                let textToProcess = cleanText;
+                if (lines.length >= 2) {
+                    textToProcess = lines[1]; // Segunda linha (índice 1)
+                }
+                
+                // Buscar por padrões de placas
+                // Padrão Mercosul: 3 letras + 1 número + 1 letra + 2 números (ex: ABC1D23)
+                const mercosulPattern = /[A-Z]{3}[0-9][A-Z][0-9]{2}/;
+                const mercosulMatch = textToProcess.match(mercosulPattern);
+                
+                if (mercosulMatch) {
+                    return mercosulMatch[0];
+                }
+                
+                // Padrão antigo: 3 letras + 4 números (ex: ABC1234)
+                const oldPattern = /[A-Z]{3}[0-9]{4}/;
+                const oldMatch = textToProcess.match(oldPattern);
+                
+                if (oldMatch) {
+                    return oldMatch[0];
+                }
+                
+                // Se não encontrou com os padrões exatos, tentar uma abordagem mais flexível
+                // Procurar por 3 letras seguidas
+                const threeLettersRegex = /[A-Z]{3}/;
+                const threeLettersMatch = textToProcess.match(threeLettersRegex);
+                
+                if (threeLettersMatch) {
+                    const lettersIndex = textToProcess.indexOf(threeLettersMatch[0]);
+                    const afterLetters = textToProcess.substring(lettersIndex + 3);
                     
-                    // Procurar por padrões de números após as 3 letras
-                    // Padrão Mercosul: 1 número + 1 letra + 2 números (ex: ABC1D23)
-                    const mercosulPattern = /[0-9][A-Z][0-9]{2}/;
-                    const mercosulMatch = afterLetters.match(mercosulPattern);
+                    // Procurar por 4 números após as 3 letras (padrão antigo)
+                    const fourNumbersRegex = /[0-9]{4}/;
+                    const fourNumbersMatch = afterLetters.match(fourNumbersRegex);
                     
-                    if (mercosulMatch) {
-                        return letters + mercosulMatch[0];
+                    if (fourNumbersMatch) {
+                        return threeLettersMatch[0] + fourNumbersMatch[0];
                     }
                     
-                    // Padrão antigo: 4 números (ex: ABC1234)
-                    const oldPattern = /[0-9]{4}/;
-                    const oldMatch = afterLetters.match(oldPattern);
+                    // Procurar por padrão Mercosul (1 número + 1 letra + 2 números)
+                    const mercosulFlexPattern = /[0-9][A-Z][0-9]{2}/;
+                    const mercosulFlexMatch = afterLetters.match(mercosulFlexPattern);
                     
-                    if (oldMatch) {
-                        return letters + oldMatch[0];
+                    if (mercosulFlexMatch) {
+                        return threeLettersMatch[0] + mercosulFlexMatch[0];
                     }
                 }
                 
@@ -1171,6 +1224,7 @@
             function performOCR(imageData, source) {
                 showToast('Processando imagem...');
                 ocrLoading.style.display = 'block';
+                isProcessingImage = true;
                 
                 // Criar uma imagem para pré-processamento
                 const img = new Image();
@@ -1213,9 +1267,11 @@
                             showToast('Não foi possível identificar a placa. Preencha manualmente.', 'error');
                         }
                         ocrLoading.style.display = 'none';
+                        isProcessingImage = false;
                     }).catch(error => {
                         showToast('Erro no reconhecimento de texto: ' + error.message, 'error');
                         ocrLoading.style.display = 'none';
+                        isProcessingImage = false;
                     });
                 };
                 img.src = imageData;
@@ -1499,7 +1555,7 @@
                     'delivered': vehicles.filter(v => v.status === 'delivered')
                 };
                 
-                for (const [status, vehiclesInStatus] of Object.entries(statusGroups)) {
+                for (const [status, vehiclesInStatus] of Object.entries(statusGroups) {
                     if (vehiclesInStatus.length > 0) {
                         reportText += `\n${getStatusText(status).toUpperCase()} (${vehiclesInStatus.length})\n`;
                         reportText += "".padEnd(40, "=") + "\n";
