@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OficinaMaster - Gestão de Veículos</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Incluindo Tesseract.js para OCR -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --accent: #e74c3c;
+            --success: #2ecc71;
+            --warning: #f39c12;
+            --light: #ecf0f1;
+            --dark: #2c3e50;
+            --gray: #7f8c8d;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            color: var(--dark);
+            line-height: 1.6;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            padding: 20px 0;
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: "";
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 60%);
+            transform: rotate(30deg);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo i {
+            font-size: 2rem;
+        }
+
+        .logo h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+
+        .nav-tabs {
+            display: flex;
+            margin-top: 20px;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        .nav-tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            font-weight: 600;
+        }
+
+        .nav-tab.active {
+            background: var(--secondary);
+            color: white;
+        }
+
+        .nav-tab:hover:not(.active) {
+            background: #f1f1f1;
+        }
+
+        .tab-content {
+            display: none;
+            margin-top: 20px;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            padding: 25px;
+            transition: var(--transition);
+            margin-bottom: 20px;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .card-header i {
+            font-size: 1.5rem;
+            color: var(--secondary);
+            margin-right: 10px;
+        }
+
+        .card-header h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--dark);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--secondary);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 12px 25px;
+            background-color: var(--secondary);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: var(--transition);
+            text-align: center;
+        }
+
+        .btn:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+        }
+
+        .btn-block {
+            display: block;
+            width: 100%;
+        }
+
+        .btn-accent {
+            background-color: var(--accent);
+        }
+
+        .btn-accent:hover {
+            background-color: #c0392b;
+        }
+
+        .btn-success {
+            background-color: var(--success);
+        }
+
+        .btn-success:hover {
+            background-color: #27ae60;
+        }
+
+        .btn-warning {
+            background-color: var(--warning);
+        }
+
+        .btn-warning:hover {
+            background-color: #e67e22;
+        }
+
+        .camera-container, .image-upload {
+            border: 2px dashed #ddd;
+            border-radius: 5px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .camera-container video, .camera-container canvas {
+            width: 100%;
+            border-radius: 5px;
+            background: #f1f1f1;
+        }
+
+        .camera-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .image-upload {
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .image-upload:hover {
+            border-color: var(--secondary);
+        }
+
+        .image-upload i {
+            font-size: 3rem;
+            color: #ddd;
+            margin-bottom: 15px;
+            transition: var(--transition);
+        }
+
+        .image-upload:hover i {
+            color: var(--secondary);
+        }
+
+        .image-preview {
+            width: 100%;
+            display: none;
+            margin-top: 20px;
+            border-radius: 5px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        .image-preview img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .vehicles-list {
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .vehicle-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            transition: var(--transition);
+        }
+
+        .vehicle-item:hover {
+            background-color: #f9f9f9;
+        }
+
+        .vehicle-info h3 {
+            font-size: 1.1rem;
+            margin-bottom: 5px;
+        }
+
+        .vehicle-info p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .vehicle-status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-top: 5px;
+        }
+
+        .status-pending {
+            background-color: #ffeaa7;
+            color: #d35400;
+        }
+
+        .status-progress {
+            background-color: #81ecec;
+            color: #00cec9;
+        }
+
+        .status-completed {
+            background-color: #55efc4;
+            color: #00b894;
+        }
+
+        .status-delivered {
+            background-color: #74b9ff;
+            color: #0984e3;
+        }
+
+        .vehicle-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-btn {
+            background: none;
+            border: none;
+            color: #999;
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: var(--transition);
+        }
+
+        .action-btn:hover {
+            color: var(--secondary);
+        }
+
+        .action-btn.delete:hover {
+            color: var(--accent);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 0;
+            color: #999;
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: var(--success);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 5px;
+            box-shadow: var(--shadow);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: var(--transition);
+            z-index: 1000;
+        }
+
+        .toast.error {
+            background-color: var(--accent);
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .conference-mode {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: var(--success);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 50px;
+            box-shadow: var(--shadow);
+            z-index: 900;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .conference-mode .pulse {
+            width: 15px;
+            height: 15px;
+            background: white;
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            padding: 20px;
+            color: #777;
+        }
+
+        /* Animações */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); opacity: 0.7; }
+            70% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.7; }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        /* Responsividade */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                text-align: center;
+                gap: 10px;
+            }
+
+            .logo {
+                justify-content: center;
+            }
+
+            .nav-tabs {
+                flex-direction: column;
+            }
+
+            .card {
+                padding: 20px;
+            }
+
+            .vehicle-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .vehicle-actions {
+                margin-top: 15px;
+                align-self: flex-end;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-tools"></i>
+                    <h1>OficinaMaster</h1>
+                </div>
+                <p>Gestão de Veículos com Reconhecimento de Placas</p>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="nav-tabs">
+            <div class="nav-tab active" data-tab="add-vehicle">
+                <i class="fas fa-plus-circle"></i> Adicionar Veículo
+            </div>
+            <div class="nav-tab" data-tab="manage-vehicles">
+                <i class="fas fa-list"></i> Gerenciar Veículos
+            </div>
+            <div class="nav-tab" data-tab="conference">
+                <i class="fas fa-camera"></i> Modo Conferência
+            </div>
+        </div>
+
+        <!-- Tab: Adicionar Veículo -->
+        <div class="tab-content active" id="add-vehicle">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-camera"></i>
+                    <h2>Capturar Placa</h2>
+                </div>
+                
+                <div class="form-group">
+                    <label>Usar câmera</label>
+                    <div class="camera-container">
+                        <video id="cameraPreview" autoplay playsinline></video>
+                        <canvas id="photoCanvas" style="display: none;"></canvas>
+                        <div class="camera-actions">
+                            <button id="startCamera" class="btn btn-block">
+                                <i class="fas fa-video"></i> Iniciar Câmera
+                            </button>
+                            <button id="capturePhoto" class="btn btn-accent btn-block" disabled>
+                                <i class="fas fa-camera"></i> Capturar Placa
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Ou enviar imagem da placa</label>
+                    <div class="image-upload" id="plateImageUpload">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <p>Clique ou arraste uma imagem da placa aqui</p>
+                        <input type="file" id="plateImage" accept="image/*" style="display: none;">
+                    </div>
+                    <div class="image-preview" id="imagePreview">
+                        <img src="" alt="Preview da placa">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="plateNumber">Número da Placa</label>
+                    <input type="text" id="plateNumber" class="form-control" placeholder="Ex: ABC1D23 ou ABC1234">
+                </div>
+
+                <div class="form-group">
+                    <label for="vehicleModel">Modelo do Veículo</label>
+                    <input type="text" id="vehicleModel" class="form-control" placeholder="Ex: Honda Civic">
+                </div>
+
+                <div class="form-group">
+                    <label for="vehicleYear">Ano do Veículo</label>
+                    <input type="number" id="vehicleYear" class="form-control" placeholder="Ex: 2020" min="1900" max="2030">
+                </div>
+
+                <div class="form-group">
+                    <label for="ownerName">Nome do Proprietário</label>
+                    <input type="text" id="ownerName" class="form-control" placeholder="Ex: João Silva">
+                </div>
+
+                <div class="form-group">
+                    <label for="serviceDescription">Descrição do Serviço</label>
+                    <textarea id="serviceDescription" class="form-control" rows="3" placeholder="Descreva o serviço a ser realizado"></textarea>
+                </div>
+
+                <button id="saveVehicle" class="btn btn-block">
+                    <i class="fas fa-save"></i> Salvar Veículo
+                </button>
+            </div>
+        </div>
+
+        <!-- Tab: Gerenciar Veículos -->
+        <div class="tab-content" id="manage-vehicles">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-clipboard-list"></i>
+                    <h2>Veículos na Oficina</h2>
+                </div>
+
+                <div class="vehicles-list" id="vehiclesList">
+                    <!-- Os veículos serão listados aqui via JavaScript -->
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-check-circle"></i>
+                    <h2>Veículos Concluídos</h2>
+                </div>
+
+                <div class="vehicles-list" id="completedVehiclesList">
+                    <!-- Os veículos concluídos serão listados aqui via JavaScript -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Modo Conferência -->
+        <div class="tab-content" id="conference">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-video"></i>
+                    <h2>Conferência de Veículos</h2>
+                </div>
+                
+                <div class="form-group">
+                    <label>Camera para conferência</label>
+                    <div class="camera-container">
+                        <video id="conferenceCameraPreview" autoplay playsinline></video>
+                        <div class="camera-actions">
+                            <button id="startConferenceCamera" class="btn btn-block">
+                                <i class="fas fa-video"></i> Iniciar Conferência
+                            </button>
+                            <button id="stopConferenceCamera" class="btn btn-accent btn-block" disabled>
+                                <i class="fas fa-stop"></i> Parar Conferência
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Veículos a conferir</label>
+                    <div class="vehicles-list" id="conferenceList">
+                        <!-- Lista de veículos para conferência -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <div class="conference-mode" id="conferenceModeIndicator" style="display: none;">
+        <div class="pulse"></div>
+        <span>Modo Conferência Ativo</span>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>OficinaMaster &copy; 2023 - Sistema Avançado de Gestão para Oficinas</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Elementos do DOM
+            const navTabs = document.querySelectorAll('.nav-tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+            const plateImageUpload = document.getElementById('plateImageUpload');
+            const plateImage = document.getElementById('plateImage');
+            const imagePreview = document.getElementById('imagePreview');
+            const plateNumber = document.getElementById('plateNumber');
+            const vehicleModel = document.getElementById('vehicleModel');
+            const vehicleYear = document.getElementById('vehicleYear');
+            const ownerName = document.getElementById('ownerName');
+            const serviceDescription = document.getElementById('serviceDescription');
+            const saveVehicle = document.getElementById('saveVehicle');
+            const vehiclesList = document.getElementById('vehiclesList');
+            const completedVehiclesList = document.getElementById('completedVehiclesList');
+            const conferenceList = document.getElementById('conferenceList');
+            const toast = document.getElementById('toast');
+            
+            // Elementos da câmera
+            const cameraPreview = document.getElementById('cameraPreview');
+            const photoCanvas = document.getElementById('photoCanvas');
+            const startCamera = document.getElementById('startCamera');
+            const capturePhoto = document.getElementById('capturePhoto');
+            
+            // Elementos da conferência
+            const conferenceCameraPreview = document.getElementById('conferenceCameraPreview');
+            const startConferenceCamera = document.getElementById('startConferenceCamera');
+            const stopConferenceCamera = document.getElementById('stopConferenceCamera');
+            const conferenceModeIndicator = document.getElementById('conferenceModeIndicator');
+            
+            // Variáveis de estado
+            let cameraStream = null;
+            let conferenceCameraStream = null;
+            let conferenceInterval = null;
+            let isConferenceMode = false;
+
+            // Navegação por abas
+            navTabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-tab');
+                    
+                    // Ativar aba clicada
+                    navTabs.forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Mostrar conteúdo correspondente
+                    tabContents.forEach(content => content.classList.remove('active'));
+                    document.getElementById(tabId).classList.add('active');
+                    
+                    // Parar câmeras ao mudar de aba (exceto se for para a conferência)
+                    if (tabId !== 'conference' && conferenceCameraStream) {
+                        stopConferenceCameraHandler();
+                    }
+                    if (tabId !== 'add-vehicle' && cameraStream) {
+                        stopCameraHandler();
+                    }
+                });
+            });
+
+            // Inicializar a lista de veículos
+            updateVehiclesList();
+
+            // Upload de imagem
+            plateImageUpload.addEventListener('click', function() {
+                plateImage.click();
+            });
+
+            plateImage.addEventListener('change', function(e) {
+                if (e.target.files && e.target.files[0]) {
+                    const reader = new FileReader();
+                    
+                    reader.onload = function(e) {
+                        imagePreview.style.display = 'block';
+                        imagePreview.querySelector('img').src = e.target.result;
+                        
+                        // Realizar OCR na imagem
+                        performOCR(e.target.result);
+                    }
+                    
+                    reader.readAsDataURL(e.target.files[0]);
+                }
+            });
+
+            // Configuração da câmera
+            startCamera.addEventListener('click', startCameraHandler);
+            capturePhoto.addEventListener('click', capturePhotoHandler);
+
+            // Conferência
+            startConferenceCamera.addEventListener('click', startConferenceCameraHandler);
+            stopConferenceCamera.addEventListener('click', stopConferenceCameraHandler);
+
+            // Salvar veículo
+            saveVehicle.addEventListener('click', function() {
+                if (!plateNumber.value || !vehicleModel.value) {
+                    showToast('Preencha pelo menos a placa e o modelo do veículo', 'error');
+                    return;
+                }
+
+                const vehicle = {
+                    id: Date.now(),
+                    plate: plateNumber.value.toUpperCase(),
+                    model: vehicleModel.value,
+                    year: vehicleYear.value,
+                    owner: ownerName.value,
+                    service: serviceDescription.value,
+                    date: new Date().toLocaleDateString('pt-BR'),
+                    status: 'pending',
+                    image: imagePreview.querySelector('img').src || ''
+                };
+
+                saveVehicleToStorage(vehicle);
+                clearForm();
+                updateVehiclesList();
+                showToast('Veículo salvo com sucesso!');
+            });
+
+            // Funções da câmera
+            function startCameraHandler() {
+                navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+                .then(function(stream) {
+                    cameraStream = stream;
+                    cameraPreview.srcObject = stream;
+                    capturePhoto.disabled = false;
+                    startCamera.disabled = true;
+                })
+                .catch(function(error) {
+                    showToast('Erro ao acessar a câmera: ' + error.message, 'error');
+                });
+            }
+
+            function capturePhotoHandler() {
+                const context = photoCanvas.getContext('2d');
+                photoCanvas.width = cameraPreview.videoWidth;
+                photoCanvas.height = cameraPreview.videoHeight;
+                context.drawImage(cameraPreview, 0, 0, photoCanvas.width, photoCanvas.height);
+                
+                // Converter para data URL e exibir preview
+                const imageData = photoCanvas.toDataURL('image/png');
+                imagePreview.style.display = 'block';
+                imagePreview.querySelector('img').src = imageData;
+                
+                // Realizar OCR na imagem capturada
+                performOCR(imageData);
+                
+                // Parar a câmera após captura
+                stopCameraHandler();
+            }
+
+            function stopCameraHandler() {
+                if (cameraStream) {
+                    cameraStream.getTracks().forEach(track => track.stop());
+                    cameraPreview.srcObject = null;
+                    cameraStream = null;
+                }
+                capturePhoto.disabled = true;
+                startCamera.disabled = false;
+            }
+
+            // Funções de conferência
+            function startConferenceCameraHandler() {
+                navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+                .then(function(stream) {
+                    conferenceCameraStream = stream;
+                    conferenceCameraPreview.srcObject = stream;
+                    startConferenceCamera.disabled = true;
+                    stopConferenceCamera.disabled = false;
+                    conferenceModeIndicator.style.display = 'flex';
+                    isConferenceMode = true;
+                    
+                    // Iniciar verificação periódica
+                    conferenceInterval = setInterval(checkPlateConference, 3000);
+                })
+                .catch(function(error) {
+                    showToast('Erro ao acessar a câmera: ' + error.message, 'error');
+                });
+            }
+
+            function stopConferenceCameraHandler() {
+                if (conferenceCameraStream) {
+                    conferenceCameraStream.getTracks().forEach(track => track.stop());
+                    conferenceCameraPreview.srcObject = null;
+                    conferenceCameraStream = null;
+                }
+                startConferenceCamera.disabled = false;
+                stopConferenceCamera.disabled = true;
+                conferenceModeIndicator.style.display = 'none';
+                isConferenceMode = false;
+                
+                // Parar verificação periódica
+                if (conferenceInterval) {
+                    clearInterval(conferenceInterval);
+                    conferenceInterval = null;
+                }
+            }
+
+            function checkPlateConference() {
+                const context = photoCanvas.getContext('2d');
+                photoCanvas.width = conferenceCameraPreview.videoWidth;
+                photoCanvas.height = conferenceCameraPreview.videoHeight;
+                context.drawImage(conferenceCameraPreview, 0, 0, photoCanvas.width, photoCanvas.height);
+                
+                // Converter para data URL e realizar OCR
+                const imageData = photoCanvas.toDataURL('image/png');
+                
+                Tesseract.recognize(
+                    imageData,
+                    'eng',
+                    { logger: message => console.log(message) }
+                ).then(({ data: { text } }) => {
+                    const foundPlate = extractPlateFromText(text);
+                    if (foundPlate) {
+                        // Verificar se a placa está na lista
+                        checkIfPlateExists(foundPlate);
+                    }
+                });
+            }
+
+            function extractPlateFromText(text) {
+                // Expressão regular para placas do Mercosul e antigas
+                const plateRegex = /[A-Z]{3}[0-9][A-Z][0-9]{2}|[A-Z]{3}[0-9]{4}/gi;
+                const matches = text.match(plateRegex);
+                return matches ? matches[0] : null;
+            }
+
+            function checkIfPlateExists(plate) {
+                const vehicles = JSON.parse(localStorage.getItem('workshopVehicles')) || [];
+                const vehicle = vehicles.find(v => v.plate === plate);
+                
+                if (vehicle) {
+                    showToast(`Veículo encontrado: ${plate}`, 'success');
+                    markVehicleAsChecked(vehicle.id);
+                }
+            }
+
+            function markVehicleAsChecked(vehicleId) {
+                const vehicles = JSON.parse(localStorage.getItem('workshopVehicles')) || [];
+                const vehicle = vehicles.find(v => v.id === vehicleId);
+                
+                if (vehicle && !vehicle.checked) {
+                    vehicle.checked = true;
+                    vehicle.checkedAt = new Date().toLocaleString('pt-BR');
+                    localStorage.setItem('workshopVehicles', JSON.stringify(vehicles));
+                    updateConferenceList();
+                }
+            }
+
+            // Funções OCR
+            function performOCR(imageData) {
+                showToast('Processando imagem...');
+                
+                Tesseract.recognize(
+                    imageData,
+                    'eng',
+                    { logger: message => console.log(message) }
+                ).then(({ data: { text } }) => {
+                    const foundPlate = extractPlateFromText(text);
+                    if (foundPlate) {
+                        plateNumber.value = foundPlate;
+                        showToast(`Placa reconhecida: ${foundPlate}`);
+                    } else {
+                        showToast('Não foi possível identificar a placa. Preencha manualmente.', 'error');
+                    }
+                }).catch(error => {
+                    showToast('Erro no reconhecimento de texto: ' + error.message, 'error');
+                });
+            }
+
+            // Funções de gerenciamento de veículos
+            function saveVehicleToStorage(vehicle) {
+                let vehicles = JSON.parse(localStorage.getItem('workshopVehicles')) || [];
+                vehicles.push(vehicle);
+                localStorage.setItem('workshopVehicles', JSON.stringify(vehicles));
+            }
+
+            function clearForm() {
+                plateNumber.value = '';
+                vehicleModel.value = '';
+                vehicleYear.value = '';
+                ownerName.value = '';
+                serviceDescription.value = '';
+                imagePreview.style.display = 'none';
+                plateImage.value = '';
+            }
+
+            function updateVehiclesList() {
+                const vehicles = JSON.parse(localStorage.getItem('workshopVehicles')) || [];
+                const pendingVehicles = vehicles.filter(v => v.status !== 'completed' && v.status !== 'delivered');
+                const completedVehicles = vehicles.filter(v => v.status === 'completed' || v.status === 'delivered');
+                
+                // Veículos pendentes
+                if (pendingVehicles.length === 0) {
+                    vehiclesList.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-car"></i>
+                            <p>Nenhum veículo na oficina</p>
+                        </div>
+                    `;
+                } else {
+                    vehiclesList.innerHTML = '';
+                    pendingVehicles.forEach(vehicle => {
+                        const vehicleItem = createVehicleItem(vehicle);
+                        vehiclesList.appendChild(vehicleItem);
+                    });
+                }
+                
+                // Veículos concluídos
+                if (completedVehicles.length === 0) {
+                    completedVehiclesList.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-check-circle"></i>
+                            <p>Nenhum veículo concluído</p>
+                        </div>
+                    `;
+                } else {
+                    completedVehiclesList.innerHTML = '';
+                    completedVehicles.forEach(vehicle => {
+                        const vehicleItem = createVehicleItem(vehicle);
+                        completedVehiclesList.appendChild(vehicleItem);
+                    });
+                }
+                
+                updateConferenceList();
+            }
+            
+            function updateConferenceList() {
+                const vehicles = JSON.parse(localStorage.getItem('workshopVehicles')) || [];
+                const pendingVehicles = vehicles.filter(v => v.status !== 'completed' && v.status !== 'delivered');
+                
+                conferenceList.innerHTML = '';
+                
+                if (pendingVehicles.length === 0) {
+                    conferenceList.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-car"></i>
+                            <p>Nenhum veículo para conferir</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                pendingVehicles.forEach(vehicle => {
+                    const conferenceItem = document.createElement('div');
+                    conferenceItem.className = 'vehicle-item';
+                    conferenceItem.innerHTML = `
+                        <div class="vehicle-info">
+                            <h3>${vehicle.plate} - ${vehicle.model}</h3>
+                            <p>Proprietário: ${vehicle.owner || 'Não informado'} | Ano: ${vehicle.year || 'N/I'}</p>
+                            <p>Serviço: ${vehicle.service || 'Não especificado'}</p>
+                            <span class="vehicle-status status-${vehicle.status}">
+                                ${getStatusText(vehicle.status)}
+                            </span>
+                            ${vehicle.checked ? `<p>Conferido em: ${vehicle.checkedAt}</p>` : ''}
+                        </div>
+                        <div class="vehicle-actions">
+                            ${!vehicle.checked ? `
+                            <button class="action-btn check" data-id="${vehicle.id}">
+                                <i class="fas fa-check-circle"></i>
+                            </button>
+                            ` : ''}
+                        </div>
+                    `;
+                    conferenceList.appendChild(conferenceItem);
+                });
+                
+                // Adicionar event listeners para os botões de check
+                document.querySelectorAll('.action-btn.check').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const id = parseInt(this.getAttribute('data-id'));
+                        markVehicleAsChecked(id);
+                    });
+                });
+            }
+
+            function createVehicleItem(vehicle) {
+                const vehicleItem = document.createElement('div');
+                vehicleItem.className = 'vehicle-item fade-in';
+                vehicleItem.innerHTML = `
+                    <div class="vehicle-info">
+                        <h3>${vehicle.plate} - ${vehicle.model}</h3>
+                        <p>Proprietário: ${vehicle.owner || 'Não informado'} | Ano: ${vehicle.year || 'N/I'}</p>
+                        <p>Serviço: ${vehicle.service || 'Não especificado'}</p>
+                        <p>Entrada: ${vehicle.date}</p>
+                        <span class="vehicle-status status-${vehicle.status}">
+                            ${getStatusText(vehicle.status)}
+                        </span>
+                    </div>
+                    <div class="vehicle-actions">
+                        <select class="status-select" data-id="${vehicle.id}">
+                            <option value="pending" ${vehicle.status === 'pending' ? 'selected' : ''}>Pendente</option>
+                            <option value="progress" ${vehicle.status === 'progress' ? 'selected' : ''}>Em Andamento</option>
+                            <option value="completed" ${vehicle.status === 'completed' ? 'selected' : ''}>Concluído</option>
+                            <option value="delivered" ${vehicle.status === 'delivered' ? 'selected' : ''}>Entregue</option>
+                        </select>
+                        <button class="action-btn delete" data-id="${vehicle.id}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                
+                // Adicionar event listeners
+                const statusSelect = vehicleItem.querySelector('.status-select');
+                statusSelect.addEventListener('change', function() {
+                    const id = parseInt(this.getAttribute('data-id'));
+                    updateVehicleStatus(id, this.value);
+                });
+                
+                const deleteBtn = vehicleItem.querySelector('.action-btn.delete');
+                deleteBtn.addEventListener('click', function() {
+                    const id = parseInt(this.getAttribute('data-id'));
+                    deleteVehicle(id);
+                });
+                
+                return vehicleItem;
+            }
+
+            function getStatusText(status) {
+                const statusTexts = {
+                    'pending': 'Pendente',
+                    'progress': 'Em Andamento',
+                    'completed': 'Concluído',
+                    'delivered': 'Entregue'
+                };
+                return statusTexts[status] || 'Desconhecido';
+            }
+
+            function updateVehicleStatus(id, status) {
+                let vehicles = JSON.parse(localStorage.getItem('workshopVehicles')) || [];
+                vehicles = vehicles.map(vehicle => {
+                    if (vehicle.id === id) {
+                        vehicle.status = status;
+                        if (status === 'delivered') {
+                            vehicle.deliveryDate = new Date().toLocaleDateString('pt-BR');
+                        }
+                    }
+                    return vehicle;
+                });
+                localStorage.setItem('workshopVehicles', JSON.stringify(vehicles));
+                updateVehiclesList();
+                showToast('Status atualizado com sucesso!');
+            }
+
+            function deleteVehicle(id) {
+                if (confirm('Tem certeza que deseja excluir este veículo?')) {
+                    let vehicles = JSON.parse(localStorage.getItem('workshopVehicles')) || [];
+                    vehicles = vehicles.filter(vehicle => vehicle.id !== id);
+                    localStorage.setItem('workshopVehicles', JSON.stringify(vehicles));
+                    updateVehiclesList();
+                    showToast('Veículo excluído com sucesso!');
+                }
+            }
+
+            // Mostrar notificação
+            function showToast(message, type = 'success') {
+                toast.textContent = message;
+                toast.className = type === 'success' ? 'toast show' : 'toast show error';
+                
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 3000);
+            }
+
+            // Inicializar a lista de veículos
+            updateVehiclesList();
+        });
+    </script>
+</body>
+</html>
