@@ -7,6 +7,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Incluindo Tesseract.js para OCR -->
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+    <!-- Incluindo jsPDF para geração de PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     <style>
         :root {
             --primary: #2c3e50;
@@ -83,6 +86,32 @@
             font-size: 1.8rem;
             font-weight: 700;
         }
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: var(--shadow);
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .stat-pending { color: var(--warning); border-top: 4px solid var(--warning); }
+        .stat-progress { color: var(--secondary); border-top: 4px solid var(--secondary); }
+        .stat-completed { color: var(--success); border-top: 4px solid var(--success); }
+        .stat-delivered { color: #9b59b6; border-top: 4px solid #9b59b6; }
 
         .nav-tabs {
             display: flex;
@@ -233,6 +262,14 @@
             background-color: #e67e22;
         }
 
+        .btn-purple {
+            background-color: #9b59b6;
+        }
+
+        .btn-purple:hover {
+            background-color: #8e44ad;
+        }
+
         .camera-container, .image-upload {
             border: 2px dashed #ddd;
             border-radius: 5px;
@@ -356,6 +393,7 @@
         .vehicle-actions {
             display: flex;
             gap: 10px;
+            flex-wrap: wrap;
         }
 
         .action-btn {
@@ -365,10 +403,19 @@
             cursor: pointer;
             font-size: 1.1rem;
             transition: var(--transition);
+            padding: 5px;
         }
 
         .action-btn:hover {
             color: var(--secondary);
+        }
+
+        .action-btn.check:hover {
+            color: var(--success);
+        }
+
+        .action-btn.uncheck:hover {
+            color: var(--warning);
         }
 
         .action-btn.delete:hover {
@@ -461,6 +508,13 @@
             margin-right: 5px;
         }
 
+        .report-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            justify-content: center;
+        }
+
         footer {
             text-align: center;
             margin-top: 50px;
@@ -515,6 +569,10 @@
                 justify-content: center;
             }
 
+            .stats-container {
+                grid-template-columns: 1fr;
+            }
+
             .nav-tabs {
                 flex-direction: column;
             }
@@ -531,6 +589,10 @@
             .vehicle-actions {
                 margin-top: 15px;
                 align-self: flex-end;
+            }
+
+            .report-actions {
+                flex-direction: column;
             }
         }
     </style>
@@ -549,6 +611,30 @@
     </header>
 
     <div class="container">
+        <!-- Estatísticas -->
+        <div class="stats-container">
+            <div class="stat-card stat-pending">
+                <i class="fas fa-clock"></i>
+                <div class="stat-number" id="pendingCount">0</div>
+                <div>Pendentes</div>
+            </div>
+            <div class="stat-card stat-progress">
+                <i class="fas fa-tools"></i>
+                <div class="stat-number" id="progressCount">0</div>
+                <div>Em Andamento</div>
+            </div>
+            <div class="stat-card stat-completed">
+                <i class="fas fa-check-circle"></i>
+                <div class="stat-number" id="completedCount">0</div>
+                <div>Concluídos</div>
+            </div>
+            <div class="stat-card stat-delivered">
+                <i class="fas fa-truck"></i>
+                <div class="stat-number" id="deliveredCount">0</div>
+                <div>Entregues</div>
+            </div>
+        </div>
+
         <div class="nav-tabs">
             <div class="nav-tab active" data-tab="add-vehicle">
                 <i class="fas fa-plus-circle"></i> Adicionar Veículo
@@ -659,6 +745,22 @@
                     <!-- Os veículos concluídos serão listados aqui via JavaScript -->
                 </div>
             </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-file-alt"></i>
+                    <h2>Relatórios</h2>
+                </div>
+                
+                <div class="report-actions">
+                    <button id="generateTextReport" class="btn btn-success">
+                        <i class="fas fa-file-alt"></i> Relatório em Texto
+                    </button>
+                    <button id="generatePdfReport" class="btn btn-accent">
+                        <i class="fas fa-file-pdf"></i> Relatório em PDF
+                    </button>
+                </div>
+            </div>
         </div>
 
         <!-- Tab: Modo Conferência -->
@@ -730,6 +832,8 @@
             const conferenceList = document.getElementById('conferenceList');
             const toast = document.getElementById('toast');
             const ocrLoading = document.getElementById('ocrLoading');
+            const generateTextReport = document.getElementById('generateTextReport');
+            const generatePdfReport = document.getElementById('generatePdfReport');
             
             // Elementos da câmera
             const cameraPreview = document.getElementById('cameraPreview');
@@ -742,6 +846,12 @@
             const startConferenceCamera = document.getElementById('startConferenceCamera');
             const stopConferenceCamera = document.getElementById('stopConferenceCamera');
             const conferenceModeIndicator = document.getElementById('conferenceModeIndicator');
+            
+            // Elementos de estatísticas
+            const pendingCount = document.getElementById('pendingCount');
+            const progressCount = document.getElementById('progressCount');
+            const completedCount = document.getElementById('completedCount');
+            const deliveredCount = document.getElementById('deliveredCount');
             
             // Variáveis de estado
             let cameraStream = null;
@@ -805,6 +915,10 @@
             // Conferência
             startConferenceCamera.addEventListener('click', startConferenceCameraHandler);
             stopConferenceCamera.addEventListener('click', stopConferenceCameraHandler);
+
+            // Relatórios
+            generateTextReport.addEventListener('click', generateTextReportHandler);
+            generatePdfReport.addEventListener('click', generatePdfReportHandler);
 
             // Salvar veículo
             saveVehicle.addEventListener('click', function() {
@@ -984,64 +1098,33 @@
             }
 
             function extractPlateFromText(text) {
-                // Primeiro, vamos limpar o texto removendo palavras comuns de placas que não interessam
-                const unwantedWords = ['BRASIL', 'MERCO', 'SUL', 'CIDADE', 'MUNIC', 'FEDERACAO', 'ESTADO', 
-                                      'SAO', 'RIO', 'PAULO', 'JANEIRO', 'MINAS', 'GERAIS', 'PARANA', 'SANTA', 'CATARINA'];
+                // Primeiro, vamos encontrar todas as sequências de 3 letras seguidas
+                const threeLettersRegex = /[A-Z]{3}/g;
+                const threeLettersMatches = text.match(threeLettersRegex);
                 
-                let cleanText = text;
-                unwantedWords.forEach(word => {
-                    const regex = new RegExp(word, 'gi');
-                    cleanText = cleanText.replace(regex, '');
-                });
+                if (!threeLettersMatches) return null;
                 
-                // Expressão regular melhorada para placas brasileiras (antigas e Mercosul)
-                // Placas antigas: AAA-0000 ou AAA0000
-                // Placas Mercosul: AAA0A00 ou AAA0A00
-                const plateRegex = /[A-Z]{3}[\s\-]?[0-9][A-Z]?[0-9]{2}|[A-Z]{3}[\s\-]?[0-9]{4}/gi;
-                const matches = cleanText.match(plateRegex);
-                
-                if (matches) {
-                    // Remover espaços e hífens e formatar corretamente
-                    let plate = matches[0].replace(/[\s\-]/g, '');
+                // Para cada sequência de 3 letras, vamos verificar se há números após ela
+                for (const letters of threeLettersMatches) {
+                    const lettersIndex = text.indexOf(letters);
+                    const afterLetters = text.substring(lettersIndex + 3);
                     
-                    // Verificar se é placa antiga (3 letras + 4 números)
-                    if (plate.length === 7 && /^[A-Z]{3}\d{4}$/.test(plate)) {
-                        return plate;
+                    // Procurar por padrões de números após as 3 letras
+                    // Padrão Mercosul: 1 número + 1 letra + 2 números (ex: ABC1D23)
+                    const mercosulPattern = /[0-9][A-Z][0-9]{2}/;
+                    const mercosulMatch = afterLetters.match(mercosulPattern);
+                    
+                    if (mercosulMatch) {
+                        return letters + mercosulMatch[0];
                     }
                     
-                    // Verificar se é placa Mercosul (3 letras + 1 número + 1 letra + 2 números)
-                    if (plate.length === 7 && /^[A-Z]{3}\d[A-Z]\d{2}$/.test(plate)) {
-                        return plate;
-                    }
+                    // Padrão antigo: 4 números (ex: ABC1234)
+                    const oldPattern = /[0-9]{4}/;
+                    const oldMatch = afterLetters.match(oldPattern);
                     
-                    // Tentar corrigir possíveis erros de OCR
-                    if (plate.length >= 6) {
-                        // Se tiver 6 caracteres, pode estar faltando um
-                        if (plate.length === 6) {
-                            if (/^[A-Z]{3}\d{3}$/.test(plate)) {
-                                // Provavelmente placa antiga faltando o último número
-                                return plate + '0';
-                            }
-                            if (/^[A-Z]{3}\d[A-Z]\d{1}$/.test(plate)) {
-                                // Provavelmente placa Mercosul faltando o último número
-                                return plate + '0';
-                            }
-                        }
-                        
-                        // Se tiver 8 caracteres, pode ter um extra
-                        if (plate.length === 8) {
-                            if (/^[A-Z]{3}\d[A-Z]\d{3}$/.test(plate)) {
-                                // Provavelmente placa Mercosul com número extra
-                                return plate.substring(0, 7);
-                            }
-                            if (/^[A-Z]{3}\d{5}$/.test(plate)) {
-                                // Provavelmente placa antiga com número extra
-                                return plate.substring(0, 7);
-                            }
-                        }
+                    if (oldMatch) {
+                        return letters + oldMatch[0];
                     }
-                    
-                    return plate.substring(0, 7); // Retorna os primeiros 7 caracteres
                 }
                 
                 return null;
@@ -1191,6 +1274,9 @@
                 const pendingVehicles = vehicles.filter(v => v.status !== 'completed' && v.status !== 'delivered');
                 const completedVehicles = vehicles.filter(v => v.status === 'completed' || v.status === 'delivered');
                 
+                // Atualizar estatísticas
+                updateStats(vehicles);
+                
                 // Veículos pendentes
                 if (pendingVehicles.length === 0) {
                     vehiclesList.innerHTML = `
@@ -1226,6 +1312,18 @@
                 updateConferenceList();
             }
             
+            function updateStats(vehicles) {
+                const pending = vehicles.filter(v => v.status === 'pending').length;
+                const progress = vehicles.filter(v => v.status === 'progress').length;
+                const completed = vehicles.filter(v => v.status === 'completed').length;
+                const delivered = vehicles.filter(v => v.status === 'delivered').length;
+                
+                pendingCount.textContent = pending;
+                progressCount.textContent = progress;
+                completedCount.textContent = completed;
+                deliveredCount.textContent = delivered;
+            }
+            
             function updateConferenceList() {
                 const vehicles = JSON.parse(localStorage.getItem('workshopVehicles')) || [];
                 const pendingVehicles = vehicles.filter(v => v.status !== 'completed' && v.status !== 'delivered');
@@ -1259,10 +1357,14 @@
                         </div>
                         <div class="vehicle-actions">
                             ${!vehicle.checked ? `
-                            <button class="action-btn check" data-id="${vehicle.id}">
+                            <button class="action-btn check" data-id="${vehicle.id}" title="Marcar como conferido">
                                 <i class="fas fa-check-circle"></i>
                             </button>
-                            ` : ''}
+                            ` : `
+                            <button class="action-btn uncheck" data-id="${vehicle.id}" title="Desmarcar conferência">
+                                <i class="fas fa-times-circle"></i>
+                            </button>
+                            `}
                         </div>
                     `;
                     conferenceList.appendChild(conferenceItem);
@@ -1275,6 +1377,29 @@
                         markVehicleAsChecked(id);
                     });
                 });
+                
+                // Adicionar event listeners para os botões de uncheck
+                document.querySelectorAll('.action-btn.uncheck').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const id = parseInt(this.getAttribute('data-id'));
+                        uncheckVehicle(id);
+                    });
+                });
+            }
+
+            function uncheckVehicle(id) {
+                const vehicles = JSON.parse(localStorage.getItem('workshopVehicles')) || [];
+                const vehicleIndex = vehicles.findIndex(v => v.id === id);
+                
+                if (vehicleIndex !== -1) {
+                    const vehicle = vehicles[vehicleIndex];
+                    vehicle.checked = false;
+                    vehicle.checkedAt = null;
+                    
+                    localStorage.setItem('workshopVehicles', JSON.stringify(vehicles));
+                    updateConferenceList();
+                    showToast('Verificação removida com sucesso!');
+                }
             }
 
             function createVehicleItem(vehicle) {
@@ -1297,7 +1422,7 @@
                             <option value="completed" ${vehicle.status === 'completed' ? 'selected' : ''}>Concluído</option>
                             <option value="delivered" ${vehicle.status === 'delivered' ? 'selected' : ''}>Entregue</option>
                         </select>
-                        <button class="action-btn delete" data-id="${vehicle.id}">
+                        <button class="action-btn delete" data-id="${vehicle.id}" title="Excluir veículo">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
@@ -1353,6 +1478,98 @@
                     updateVehiclesList();
                     showToast('Veículo excluído com sucesso!');
                 }
+            }
+
+            // Funções de relatório
+            function generateTextReportHandler() {
+                const vehicles = JSON.parse(localStorage.getItem('workshopVehicles')) || [];
+                if (vehicles.length === 0) {
+                    showToast('Não há veículos para gerar relatório', 'error');
+                    return;
+                }
+                
+                let reportText = "RELATÓRIO DE VEÍCULOS - OFICINAMASTER\n";
+                reportText += "==========================================\n\n";
+                
+                // Agrupar por status
+                const statusGroups = {
+                    'pending': vehicles.filter(v => v.status === 'pending'),
+                    'progress': vehicles.filter(v => v.status === 'progress'),
+                    'completed': vehicles.filter(v => v.status === 'completed'),
+                    'delivered': vehicles.filter(v => v.status === 'delivered')
+                };
+                
+                for (const [status, vehiclesInStatus] of Object.entries(statusGroups)) {
+                    if (vehiclesInStatus.length > 0) {
+                        reportText += `\n${getStatusText(status).toUpperCase()} (${vehiclesInStatus.length})\n`;
+                        reportText += "".padEnd(40, "=") + "\n";
+                        
+                        vehiclesInStatus.forEach(vehicle => {
+                            reportText += `Placa: ${vehicle.plate} | Modelo: ${vehicle.model}\n`;
+                            reportText += `Proprietário: ${vehicle.owner || 'Não informado'} | Ano: ${vehicle.year || 'N/I'}\n`;
+                            reportText += `Serviço: ${vehicle.service || 'Não especificado'}\n`;
+                            reportText += `Entrada: ${vehicle.date} | Status: ${getStatusText(vehicle.status)}\n`;
+                            if (vehicle.checked) reportText += `Conferido em: ${vehicle.checkedAt}\n`;
+                            reportText += "\n";
+                        });
+                    }
+                }
+                
+                // Criar e baixar o arquivo de texto
+                const blob = new Blob([reportText], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `relatorio-veiculos-${new Date().toISOString().split('T')[0]}.txt`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                showToast('Relatório em texto gerado com sucesso!');
+            }
+
+            function generatePdfReportHandler() {
+                const { jsPDF } = window.jspdf;
+                const vehicles = JSON.parse(localStorage.getItem('workshopVehicles')) || [];
+                
+                if (vehicles.length === 0) {
+                    showToast('Não há veículos para gerar relatório', 'error');
+                    return;
+                }
+                
+                const doc = new jsPDF();
+                
+                // Título
+                doc.setFontSize(20);
+                doc.text("RELATÓRIO DE VEÍCULOS", 105, 15, { align: 'center' });
+                doc.setFontSize(12);
+                doc.text("OficinaMaster - " + new Date().toLocaleDateString('pt-BR'), 105, 22, { align: 'center' });
+                
+                // Preparar dados para a tabela
+                const tableData = vehicles.map(vehicle => [
+                    vehicle.plate,
+                    vehicle.model,
+                    vehicle.owner || 'Não informado',
+                    vehicle.year || 'N/I',
+                    getStatusText(vehicle.status),
+                    vehicle.date
+                ]);
+                
+                // Criar tabela
+                doc.autoTable({
+                    head: [['Placa', 'Modelo', 'Proprietário', 'Ano', 'Status', 'Entrada']],
+                    body: tableData,
+                    startY: 30,
+                    theme: 'grid',
+                    styles: { fontSize: 10 },
+                    headStyles: { fillColor: [52, 152, 219] }
+                });
+                
+                // Salvar PDF
+                doc.save(`relatorio-veiculos-${new Date().toISOString().split('T')[0]}.pdf`);
+                
+                showToast('Relatório em PDF gerado com sucesso!');
             }
 
             // Mostrar notificação
