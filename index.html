@@ -1226,17 +1226,6 @@
                 // Remover siglas de estados (UF) com 2 letras no início seguido de espaço ou fim
                 text = text.replace(/\b[A-Z]{2}\b/g, '');
                 
-                // Remover palavras com mais de 3 letras (exceto placas válidas)
-                const words = text.split(/\s+/);
-                const filteredWords = words.filter(word => {
-                    // Manter apenas palavras com 3 letras (parte inicial da placa)
-                    // ou padrões de placa (3 letras + números)
-                    const isPlatePattern = /^[A-Z]{3}[0-9][A-Z0-9]{0,3}$/.test(word);
-                    return word.length <= 3 || isPlatePattern;
-                });
-                
-                text = filteredWords.join(' ');
-                
                 // Primeiro, vamos encontrar todas as sequências de 3 letras seguidas
                 const threeLettersRegex = /[A-Z]{3}/g;
                 const threeLettersMatches = text.match(threeLettersRegex);
@@ -1742,8 +1731,6 @@
                 
                 let reportText = "RELATÓRIO DE VEÍCULOS - OFICINAMASTER\n";
                 reportText += "==========================================\n\n";
-                reportText += `Data do relatório: ${new Date().toLocaleDateString('pt-BR')}\n`;
-                reportText += `Total de veículos: ${vehicles.length}\n\n`;
                 
                 // Agrupar por status
                 const statusGroups = {
@@ -1756,26 +1743,21 @@
                 for (const [status, vehiclesInStatus] of Object.entries(statusGroups)) {
                     if (vehiclesInStatus.length > 0) {
                         reportText += `\n${getStatusText(status).toUpperCase()} (${vehiclesInStatus.length})\n`;
-                        reportText += "".padEnd(50, "=") + "\n";
+                        reportText += "".padEnd(40, "=") + "\n";
                         
                         vehiclesInStatus.forEach(vehicle => {
-                            reportText += `Placa: ${vehicle.plate}\n`;
-                            reportText += `Modelo: ${vehicle.model}\n`;
-                            reportText += `Proprietário: ${vehicle.owner || 'Não informado'}\n`;
-                            reportText += `Ano: ${vehicle.year || 'N/I'}\n`;
+                            reportText += `Placa: ${vehicle.plate} | Modelo: ${vehicle.model}\n`;
+                            reportText += `Proprietário: ${vehicle.owner || 'Não informado'} | Ano: ${vehicle.year || 'N/I'}\n`;
                             reportText += `Serviço: ${vehicle.service || 'Não especificado'}\n`;
-                            reportText += `Entrada: ${vehicle.date}\n`;
-                            reportText += `Status: ${getStatusText(vehicle.status)}\n`;
+                            reportText += `Entrada: ${vehicle.date} | Status: ${getStatusText(vehicle.status)}\n`;
                             if (vehicle.checked) reportText += `Conferido em: ${vehicle.checkedAt}\n`;
-                            if (vehicle.lastConference) reportText += `Última conferência: ${vehicle.lastConference}\n`;
-                            if (vehicle.deliveryDate) reportText += `Data de entrega: ${vehicle.deliveryDate}\n`;
                             reportText += "\n";
                         });
                     }
                 }
                 
                 // Criar e baixar o arquivo de texto
-                const blob = new Blob([reportText], { type: 'text/plain;charset=utf-8' });
+                const blob = new Blob([reportText], { type: 'text/plain' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
@@ -1804,7 +1786,6 @@
                 doc.text("RELATÓRIO DE VEÍCULOS", 105, 15, { align: 'center' });
                 doc.setFontSize(12);
                 doc.text("OficinaMaster - " + new Date().toLocaleDateString('pt-BR'), 105, 22, { align: 'center' });
-                doc.text(`Total de veículos: ${vehicles.length}`, 105, 28, { align: 'center' });
                 
                 // Preparar dados para a tabela
                 const tableData = vehicles.map(vehicle => [
@@ -1812,23 +1793,18 @@
                     vehicle.model,
                     vehicle.owner || 'Não informado',
                     vehicle.year || 'N/I',
-                    vehicle.service || 'Não especificado',
-                    vehicle.date,
                     getStatusText(vehicle.status),
-                    vehicle.checked ? 'Sim' : 'Não',
-                    vehicle.checkedAt || '-',
-                    vehicle.lastConference || '-'
+                    vehicle.date
                 ]);
                 
                 // Criar tabela
                 doc.autoTable({
-                    head: [['Placa', 'Modelo', 'Proprietário', 'Ano', 'Serviço', 'Entrada', 'Status', 'Conferido', 'Conferido em', 'Última Conferência']],
+                    head: [['Placa', 'Modelo', 'Proprietário', 'Ano', 'Status', 'Entrada']],
                     body: tableData,
-                    startY: 35,
+                    startY: 30,
                     theme: 'grid',
-                    styles: { fontSize: 8, cellPadding: 2 },
-                    headStyles: { fillColor: [52, 152, 219] },
-                    margin: { top: 35 }
+                    styles: { fontSize: 10 },
+                    headStyles: { fillColor: [52, 152, 219] }
                 });
                 
                 // Salvar PDF
