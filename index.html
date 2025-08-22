@@ -35,19 +35,20 @@
             background-color: #f5f7fa;
             color: var(--dark);
             line-height: 1.6;
+            overflow-x: hidden;
         }
 
         .container {
             width: 100%;
             max-width: 1200px;
             margin: 0 auto;
-            padding: 20px;
+            padding: 15px;
         }
 
         header {
             background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
             color: white;
-            padding: 20px 0;
+            padding: 15px 0;
             box-shadow: var(--shadow);
             position: relative;
             overflow: hidden;
@@ -66,10 +67,13 @@
 
         .header-content {
             display: flex;
-            justify-content: space-between;
+            flex-direction: column;
+            justify-content: center;
             align-items: center;
             position: relative;
             z-index: 1;
+            text-align: center;
+            gap: 10px;
         }
 
         .logo {
@@ -79,33 +83,35 @@
         }
 
         .logo i {
-            font-size: 2rem;
+            font-size: 1.8rem;
         }
 
         .logo h1 {
-            font-size: 1.8rem;
+            font-size: 1.5rem;
             font-weight: 700;
         }
 
         .stats-container {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+            width: 100%;
         }
 
         .stat-card {
             background: white;
-            border-radius: 10px;
-            padding: 15px;
+            border-radius: 8px;
+            padding: 12px;
             text-align: center;
             box-shadow: var(--shadow);
+            font-size: 0.9rem;
         }
 
         .stat-number {
-            font-size: 2rem;
+            font-size: 1.5rem;
             font-weight: bold;
-            margin: 10px 0;
+            margin: 8px 0;
         }
 
         .stat-pending { color: var(--warning); border-top: 4px solid var(--warning); }
@@ -115,20 +121,22 @@
 
         .nav-tabs {
             display: flex;
-            margin-top: 20px;
+            flex-direction: column;
+            margin-top: 15px;
             background: white;
-            border-radius: 10px;
+            border-radius: 8px;
             overflow: hidden;
             box-shadow: var(--shadow);
+            width: 100%;
         }
 
         .nav-tab {
-            flex: 1;
-            padding: 15px;
+            padding: 12px;
             text-align: center;
             cursor: pointer;
             transition: var(--transition);
             font-weight: 600;
+            font-size: 0.9rem;
         }
 
         .nav-tab.active {
@@ -142,8 +150,9 @@
 
         .tab-content {
             display: none;
-            margin-top: 20px;
+            margin-top: 15px;
             animation: fadeIn 0.5s ease;
+            width: 100%;
         }
 
         .tab-content.active {
@@ -152,59 +161,61 @@
 
         .card {
             background: white;
-            border-radius: 10px;
+            border-radius: 8px;
             box-shadow: var(--shadow);
-            padding: 25px;
+            padding: 20px;
             transition: var(--transition);
-            margin-bottom: 20px;
+            margin-bottom: 15px;
+            width: 100%;
         }
 
         .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
         }
 
         .card.checked {
-            border-left: 5px solid var(--success);
+            border-left: 4px solid var(--success);
             background-color: #f8fff9;
         }
 
         .card-header {
             display: flex;
             align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
+            margin-bottom: 15px;
+            padding-bottom: 12px;
             border-bottom: 1px solid #eee;
         }
 
         .card-header i {
-            font-size: 1.5rem;
+            font-size: 1.3rem;
             color: var(--secondary);
-            margin-right: 10px;
+            margin-right: 8px;
         }
 
         .card-header h2 {
-            font-size: 1.5rem;
+            font-size: 1.3rem;
             font-weight: 600;
         }
 
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
 
         .form-group label {
             display: block;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             font-weight: 500;
             color: var(--dark);
+            font-size: 0.9rem;
         }
 
         .form-control {
             width: 100%;
-            padding: 12px 15px;
+            padding: 10px 12px;
             border: 1px solid #ddd;
             border-radius: 5px;
-            font-size: 1rem;
+            font-size: 0.9rem;
             transition: var(--transition);
         }
 
@@ -216,13 +227,13 @@
 
         .btn {
             display: inline-block;
-            padding: 12px 25px;
+            padding: 10px 15px;
             background-color: var(--secondary);
             color: white;
             border: none;
             border-radius: 5px;
             cursor: pointer;
-            font-size: 1rem;
+            font-size: 0.9rem;
             font-weight: 600;
             transition: var(--transition);
             text-align: center;
@@ -273,23 +284,27 @@
         .camera-container, .image-upload {
             border: 2px dashed #ddd;
             border-radius: 5px;
-            padding: 20px;
+            padding: 15px;
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             position: relative;
             overflow: hidden;
+            width: 100%;
         }
 
         .camera-container video, .camera-container canvas {
             width: 100%;
+            max-height: 300px;
             border-radius: 5px;
             background: #f1f1f1;
+            object-fit: cover;
         }
 
         .camera-actions {
             display: flex;
-            gap: 10px;
-            margin-top: 15px;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 12px;
         }
 
         .image-upload {
@@ -302,10 +317,10 @@
         }
 
         .image-upload i {
-            font-size: 3rem;
+            font-size: 2.5rem;
             color: #ddd;
-            margin-bottom: 15px;
-            transition: var(--transition;
+            margin-bottom: 12px;
+            transition: var(--transition);
         }
 
         .image-upload:hover i {
@@ -315,7 +330,7 @@
         .image-preview {
             width: 100%;
             display: none;
-            margin-top: 20px;
+            margin-top: 15px;
             border-radius: 5px;
             overflow: hidden;
             box-shadow: var(--shadow);
@@ -324,22 +339,26 @@
         .image-preview img {
             width: 100%;
             height: auto;
+            max-height: 300px;
+            object-fit: contain;
             display: block;
         }
 
         .vehicles-list {
-            margin-top: 20px;
+            margin-top: 15px;
             max-height: 400px;
             overflow-y: auto;
+            width: 100%;
         }
 
         .vehicle-item {
             display: flex;
+            flex-direction: column;
             justify-content: space-between;
-            align-items: center;
-            padding: 15px;
+            padding: 12px;
             border-bottom: 1px solid #eee;
             transition: var(--transition);
+            width: 100%;
         }
 
         .vehicle-item:hover {
@@ -352,20 +371,21 @@
         }
 
         .vehicle-info h3 {
-            font-size: 1.1rem;
+            font-size: 1rem;
             margin-bottom: 5px;
         }
 
         .vehicle-info p {
             color: #666;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
+            margin-bottom: 5px;
         }
 
         .vehicle-status {
             display: inline-block;
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 0.8rem;
+            padding: 4px 8px;
+            border-radius: 15px;
+            font-size: 0.75rem;
             font-weight: 600;
             margin-top: 5px;
         }
@@ -392,8 +412,10 @@
 
         .vehicle-actions {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             flex-wrap: wrap;
+            margin-top: 10px;
+            justify-content: flex-end;
         }
 
         .action-btn {
@@ -401,7 +423,7 @@
             border: none;
             color: #999;
             cursor: pointer;
-            font-size: 1.1rem;
+            font-size: 1rem;
             transition: var(--transition);
             padding: 5px;
         }
@@ -415,7 +437,7 @@
         }
 
         .action-btn.uncheck:hover {
-            color: var(--warning);
+            color: var(--warning;
         }
 
         .action-btn.delete:hover {
@@ -424,28 +446,31 @@
 
         .empty-state {
             text-align: center;
-            padding: 40px 0;
+            padding: 30px 0;
             color: #999;
         }
 
         .empty-state i {
-            font-size: 3rem;
-            margin-bottom: 15px;
+            font-size: 2.5rem;
+            margin-bottom: 12px;
         }
 
         .toast {
             position: fixed;
-            bottom: 20px;
-            right: 20px;
+            bottom: 15px;
+            right: 15px;
+            left: 15px;
             background-color: var(--success);
             color: white;
-            padding: 15px 25px;
+            padding: 12px 20px;
             border-radius: 5px;
             box-shadow: var(--shadow);
             opacity: 0;
             transform: translateY(20px);
             transition: var(--transition);
             z-index: 1000;
+            text-align: center;
+            font-size: 0.9rem;
         }
 
         .toast.error {
@@ -459,22 +484,23 @@
 
         .conference-mode {
             position: fixed;
-            bottom: 20px;
-            left: 20px;
+            bottom: 15px;
+            left: 15px;
             background: var(--success);
             color: white;
-            padding: 15px 20px;
-            border-radius: 50px;
+            padding: 12px 15px;
+            border-radius: 40px;
             box-shadow: var(--shadow);
             z-index: 900;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
+            font-size: 0.9rem;
         }
 
         .conference-mode .pulse {
-            width: 15px;
-            height: 15px;
+            width: 12px;
+            height: 12px;
             background: white;
             border-radius: 50%;
             animation: pulse 1.5s infinite;
@@ -483,24 +509,25 @@
         .ocr-loading {
             display: none;
             text-align: center;
-            padding: 15px;
+            padding: 12px;
             background: #f8f9fa;
             border-radius: 5px;
             margin-top: 10px;
+            font-size: 0.9rem;
         }
 
         .ocr-loading i {
             color: var(--secondary);
-            margin-right: 10px;
+            margin-right: 8px;
         }
 
         .auto-capture-info {
             text-align: center;
-            padding: 10px;
+            padding: 8px;
             background-color: #e3f2fd;
             border-radius: 5px;
-            margin-bottom: 15px;
-            font-size: 0.9rem;
+            margin-bottom: 12px;
+            font-size: 0.85rem;
             color: #0d47a1;
         }
 
@@ -510,25 +537,28 @@
 
         .report-actions {
             display: flex;
+            flex-direction: column;
             gap: 10px;
-            margin-top: 20px;
+            margin-top: 15px;
             justify-content: center;
         }
 
         footer {
             text-align: center;
-            margin-top: 50px;
-            padding: 20px;
+            margin-top: 40px;
+            padding: 15px;
             color: #777;
+            font-size: 0.85rem;
         }
 
         /* Adicionando estilo para a mensagem de reconhecimento */
         .recognition-feedback {
-            padding: 10px;
-            margin: 10px 0;
+            padding: 8px;
+            margin: 8px 0;
             border-radius: 5px;
             text-align: center;
             font-weight: bold;
+            font-size: 0.9rem;
         }
         
         .recognition-success {
@@ -578,42 +608,73 @@
             animation: highlight 2s ease;
         }
 
-        /* Responsividade */
-        @media (max-width: 768px) {
-            .header-content {
-                flex-direction: column;
-                text-align: center;
-                gap: 10px;
-            }
-
-            .logo {
-                justify-content: center;
-            }
-
-            .stats-container {
-                grid-template-columns: 1fr;
-            }
-
-            .nav-tabs {
-                flex-direction: column;
-            }
-
-            .card {
+        /* Responsividade para telas maiores */
+        @media (min-width: 768px) {
+            .container {
                 padding: 20px;
             }
-
+            
+            .header-content {
+                flex-direction: row;
+                justify-content: space-between;
+                text-align: left;
+            }
+            
+            .stats-container {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 15px;
+            }
+            
+            .nav-tabs {
+                flex-direction: row;
+            }
+            
+            .nav-tab {
+                flex: 1;
+                padding: 15px;
+                font-size: 1rem;
+            }
+            
+            .camera-actions {
+                flex-direction: row;
+            }
+            
             .vehicle-item {
-                flex-direction: column;
-                align-items: flex-start;
+                flex-direction: row;
+                align-items: center;
             }
-
+            
             .vehicle-actions {
-                margin-top: 15px;
-                align-self: flex-end;
+                margin-top: 0;
             }
-
+            
             .report-actions {
-                flex-direction: column;
+                flex-direction: row;
+            }
+            
+            .toast {
+                left: auto;
+                right: 20px;
+                width: auto;
+                max-width: 400px;
+            }
+        }
+
+        @media (min-width: 992px) {
+            .logo i {
+                font-size: 2rem;
+            }
+            
+            .logo h1 {
+                font-size: 1.8rem;
+            }
+            
+            .stat-card {
+                padding: 15px;
+            }
+            
+            .stat-number {
+                font-size: 2rem;
             }
         }
     </style>
@@ -1165,6 +1226,17 @@
                 // Remover siglas de estados (UF) com 2 letras no início seguido de espaço ou fim
                 text = text.replace(/\b[A-Z]{2}\b/g, '');
                 
+                // Remover palavras com mais de 3 letras (exceto placas válidas)
+                const words = text.split(/\s+/);
+                const filteredWords = words.filter(word => {
+                    // Manter apenas palavras com 3 letras (parte inicial da placa)
+                    // ou padrões de placa (3 letras + números)
+                    const isPlatePattern = /^[A-Z]{3}[0-9][A-Z0-9]{0,3}$/.test(word);
+                    return word.length <= 3 || isPlatePattern;
+                });
+                
+                text = filteredWords.join(' ');
+                
                 // Primeiro, vamos encontrar todas as sequências de 3 letras seguidas
                 const threeLettersRegex = /[A-Z]{3}/g;
                 const threeLettersMatches = text.match(threeLettersRegex);
@@ -1670,6 +1742,8 @@
                 
                 let reportText = "RELATÓRIO DE VEÍCULOS - OFICINAMASTER\n";
                 reportText += "==========================================\n\n";
+                reportText += `Data do relatório: ${new Date().toLocaleDateString('pt-BR')}\n`;
+                reportText += `Total de veículos: ${vehicles.length}\n\n`;
                 
                 // Agrupar por status
                 const statusGroups = {
@@ -1682,21 +1756,26 @@
                 for (const [status, vehiclesInStatus] of Object.entries(statusGroups)) {
                     if (vehiclesInStatus.length > 0) {
                         reportText += `\n${getStatusText(status).toUpperCase()} (${vehiclesInStatus.length})\n`;
-                        reportText += "".padEnd(40, "=") + "\n";
+                        reportText += "".padEnd(50, "=") + "\n";
                         
                         vehiclesInStatus.forEach(vehicle => {
-                            reportText += `Placa: ${vehicle.plate} | Modelo: ${vehicle.model}\n`;
-                            reportText += `Proprietário: ${vehicle.owner || 'Não informado'} | Ano: ${vehicle.year || 'N/I'}\n`;
+                            reportText += `Placa: ${vehicle.plate}\n`;
+                            reportText += `Modelo: ${vehicle.model}\n`;
+                            reportText += `Proprietário: ${vehicle.owner || 'Não informado'}\n`;
+                            reportText += `Ano: ${vehicle.year || 'N/I'}\n`;
                             reportText += `Serviço: ${vehicle.service || 'Não especificado'}\n`;
-                            reportText += `Entrada: ${vehicle.date} | Status: ${getStatusText(vehicle.status)}\n`;
+                            reportText += `Entrada: ${vehicle.date}\n`;
+                            reportText += `Status: ${getStatusText(vehicle.status)}\n`;
                             if (vehicle.checked) reportText += `Conferido em: ${vehicle.checkedAt}\n`;
+                            if (vehicle.lastConference) reportText += `Última conferência: ${vehicle.lastConference}\n`;
+                            if (vehicle.deliveryDate) reportText += `Data de entrega: ${vehicle.deliveryDate}\n`;
                             reportText += "\n";
                         });
                     }
                 }
                 
                 // Criar e baixar o arquivo de texto
-                const blob = new Blob([reportText], { type: 'text/plain' });
+                const blob = new Blob([reportText], { type: 'text/plain;charset=utf-8' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
@@ -1725,6 +1804,7 @@
                 doc.text("RELATÓRIO DE VEÍCULOS", 105, 15, { align: 'center' });
                 doc.setFontSize(12);
                 doc.text("OficinaMaster - " + new Date().toLocaleDateString('pt-BR'), 105, 22, { align: 'center' });
+                doc.text(`Total de veículos: ${vehicles.length}`, 105, 28, { align: 'center' });
                 
                 // Preparar dados para a tabela
                 const tableData = vehicles.map(vehicle => [
@@ -1732,18 +1812,23 @@
                     vehicle.model,
                     vehicle.owner || 'Não informado',
                     vehicle.year || 'N/I',
+                    vehicle.service || 'Não especificado',
+                    vehicle.date,
                     getStatusText(vehicle.status),
-                    vehicle.date
+                    vehicle.checked ? 'Sim' : 'Não',
+                    vehicle.checkedAt || '-',
+                    vehicle.lastConference || '-'
                 ]);
                 
                 // Criar tabela
                 doc.autoTable({
-                    head: [['Placa', 'Modelo', 'Proprietário', 'Ano', 'Status', 'Entrada']],
+                    head: [['Placa', 'Modelo', 'Proprietário', 'Ano', 'Serviço', 'Entrada', 'Status', 'Conferido', 'Conferido em', 'Última Conferência']],
                     body: tableData,
-                    startY: 30,
+                    startY: 35,
                     theme: 'grid',
-                    styles: { fontSize: 10 },
-                    headStyles: { fillColor: [52, 152, 219] }
+                    styles: { fontSize: 8, cellPadding: 2 },
+                    headStyles: { fillColor: [52, 152, 219] },
+                    margin: { top: 35 }
                 });
                 
                 // Salvar PDF
